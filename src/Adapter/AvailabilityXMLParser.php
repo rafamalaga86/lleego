@@ -18,9 +18,26 @@ class AvailabilityXMLParser implements AvailabilityXMLParserInterface
     {
         $result = [];
         $soap = simplexml_load_string($xmlString);
-        $response = $soap->xpath('/soap:Envelope/soap:Body')[0]->AirShoppingRS->DataLists->FlightSegmentList;
+
+        $response = $soap
+            ->xpath('/soap:Envelope/soap:Body')[0]
+            ->AirShoppingRS
+            ->DataLists
+            ->FlightSegmentList
+            ->children();
         $json = json_encode($response);
         $array = json_decode($json, true);
+
+        // If no Segment is found, return empty array
+        if (!$response->count()) {
+            return [];
+        }
+
+        // If there is only one item, the previous lines would delete the outer array of FlightSegment
+        // and this would break the parsing, we have to correct that
+        if ($response->count() === 1) {
+            $array['FlightSegment'] = [$array['FlightSegment']];
+        }
 
         foreach ($array['FlightSegment'] as $segment) {
             $result[] = [
